@@ -4,22 +4,43 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Scanner;
 
 public class Main {
     final static Scanner sc = new Scanner(System.in);
-    public static void main(String[] args) {
 
-        String opcion;
-        do {
-            mostrarMenu();
-            opcion =sc.nextLine();
-            elegirOpcion(opcion);
-        }while (!Objects.equals(opcion, "6"));
+
+    public static void main(String[] args) throws IOException {
+
+        Properties prop = new Properties();
+        prop.load(new FileInputStream("src/main/resources/propierties.properties"));
+
+        FTPClient clienteFTP = new FTPClient();
+
+        clienteFTP.connect(prop.getProperty("hostname"), Integer.parseInt(prop.getProperty("puerto")));
+
+        int respuesta=clienteFTP.getReplyCode();
+        if(FTPReply.isPositiveCompletion(respuesta)){
+            clienteFTP.login(prop.getProperty("usuario"), prop.getProperty("password"));
+            String opcion;
+            do {
+                mostrarMenu();
+                opcion =sc.nextLine();
+                elegirOpcion(opcion,clienteFTP);
+            }while (!Objects.equals(opcion, "6"));
+
+            clienteFTP.disconnect();
+        }else{
+            clienteFTP.disconnect();
+            System.err.println("FTP ha rechazado la conexión esblecida");
+            System.exit(1);
+        }
 
     }
     public static void mostrarMenu(){
@@ -32,108 +53,97 @@ public class Main {
         System.out.println("5. Borrar un fichero: ");
         System.out.println("6. Salir");
     }
-    public static void elegirOpcion(String opcion){
+    public static void elegirOpcion(String opcion,FTPClient clienteFTP) throws IOException {
 
         switch(opcion){
             case "1":
-                mostrarDirectorio();
+                mostrarDirectorio(clienteFTP);
                 break;
             case "2":
-                entrarDirectorio();
+                entrarDirectorio(clienteFTP);
                 break;
             case "3":
-                subirDirectorioPadre();
+                clienteFTP.changeToParentDirectory();
                 break;
             case "4":
-                subirFichero();
+                subirFichero(clienteFTP);
                 break;
             case "5":
-                borrarFichero();
+                borrarFichero(clienteFTP);
                 break;
             case "6":
+                System.out.println("ADIOS :C");
                 break;
             default:
                 System.out.println("Opcion no valida");
         }
     }
-    public static void mostrarDirectorio(){
-        try{
-            Properties prop = new Properties();
-            prop.load(new FileInputStream("src/main/resources/propierties.properties"));
+    public static void mostrarDirectorio(FTPClient clienteFTP) {
+        try {
+            clienteFTP.enterLocalPassiveMode();
+            System.out.println("Carpetas disponibles en Servidor:");
 
-            FTPClient clienteFTP = new FTPClient();
-
-            clienteFTP.connect(prop.getProperty("hostname"), Integer.parseInt(prop.getProperty("puerto")));
-
-            int respuesta=clienteFTP.getReplyCode();
-            if(FTPReply.isPositiveCompletion(respuesta)){
-
-                clienteFTP.login(prop.getProperty("usuario"), prop.getProperty("password"));
-
-                clienteFTP.enterLocalPassiveMode();
-
-                System.out.println("Carpetas disponibles en Servidor:");
-
-                FTPFile[] nombreCarpeta = clienteFTP.listFiles();
-
-                for (FTPFile s : nombreCarpeta) {
-                    System.out.println(s);
-                }
-                clienteFTP.disconnect();
-            }else{
-                clienteFTP.disconnect();
-                System.err.println("FTP ha rechazado la conexión esblecida");
-                System.exit(1);
+            FTPFile[] nombreCarpeta = clienteFTP.listFiles();
+            for (FTPFile s : nombreCarpeta) {
+                System.out.println(s);
             }
-
-        }catch(IOException e){
-            System.err.println("Error al leer el archivo : "+e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
-    public static void entrarDirectorio(){
+
+
+    public static void entrarDirectorio(FTPClient clienteFTP)  {
         try{
-            Properties prop = new Properties();
-            prop.load(new FileInputStream("src/main/resources/propierties.properties"));
+            System.out.println("Introduce el directorio al que quieres acceder:");
+            String directorio = sc.nextLine();
+            boolean hecho = clienteFTP.changeWorkingDirectory(directorio);
+
+            if (hecho) {
+                System.out.println("Se ha entrado al directorio");
+            } else {
+                System.out.println("No se ha entrado al directorio");
+            }
+        }catch (IOException e){
+            System.err.println(e.getMessage());
+        }
+    }
+    public static void subirFichero(FTPClient clienteFTP){
+
+        try{
+            System.out.println("Introduce el fichero que quieres subir: ");
+            String fichero = sc.nextLine();
+            File file= new File(fichero);
 
 
-            FTPClient clienteFTP = new FTPClient();
-            clienteFTP.connect(prop.getProperty("hostname"), Integer.parseInt(prop.getProperty("puerto")));
-
-            int respuesta=clienteFTP.getReplyCode();
-            if(FTPReply.isPositiveCompletion(respuesta)){
-
-                clienteFTP.login(prop.getProperty("usuario"), prop.getProperty("password"));
-
-                System.out.println("Introduce el directorio al que quieres acceder:");
-                String directorio = sc.nextLine();
-                boolean hecho = clienteFTP.changeWorkingDirectory(directorio);
-                if (hecho) {
-                    System.out.println("Se ha entrado al directorio");
-                } else {
-                    System.out.println("No se ha entrado al directorio");
+            if(!file.exists()){
+                if(fichero.endsWith(".txt")){
+                    System.out.println("El fichero se ha encontrado");
                 }
+                clienteFTP.storeFile(fichero,null);
 
-
-                clienteFTP.disconnect();
-            }else{
-                clienteFTP.disconnect();
-                System.err.println("FTP ha rechazado la conexión esblecida");
-                System.exit(1);
             }
 
 
-        }catch(IOException e){
-            System.err.println("Error al leer el archivo : "+e.getMessage());
+        }catch (IOException e){
+            System.err.println(e.getMessage());
         }
 
     }
-    public static void subirDirectorioPadre(){
+    public static void borrarFichero(FTPClient clienteFTP){
 
-    }
-    public static void subirFichero(){
+        try {
+            System.out.println("Introduce el fichero que quieres borrar: ");
 
-    }
-    public static void borrarFichero(){
+            String fichero = sc.nextLine();
+            if(clienteFTP.deleteFile(fichero)){
+                System.out.println("El fichero se ha eliminado");
+            }else {
+                System.out.println("No se ha eliminado");
+            }
+        }catch(IOException e){
+            System.err.println(e.getMessage());
+        }
 
     }
 }
