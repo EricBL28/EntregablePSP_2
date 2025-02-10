@@ -4,9 +4,7 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
 import java.util.Objects;
 import java.util.Properties;
@@ -108,9 +106,10 @@ public class Main {
             System.err.println(e.getMessage());
         }
     }
-    public static void subirFichero(FTPClient clienteFTP){
+    public static void subirFichero(FTPClient clienteFTP){// para entender más esto https://optimizarsinmas.blogspot.com/2011/01/ftp-en-java.html
 
         try{
+
             System.out.println("Introduce el fichero que quieres subir: ");
             String fichero = sc.nextLine();
             File file= new File(fichero);
@@ -118,9 +117,11 @@ public class Main {
 
             if(!file.exists()){
                 if(fichero.endsWith(".txt")){
+                    clienteFTP.storeFile(fichero,null);
+
                     System.out.println("El fichero se ha encontrado");
                 }
-                clienteFTP.storeFile(fichero,null);
+
 
             }
 
