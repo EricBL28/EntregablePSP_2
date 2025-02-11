@@ -1,5 +1,6 @@
 package org.example;
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
@@ -114,15 +115,16 @@ public class Main {
             String fichero = sc.nextLine();
             File file= new File(fichero);
 
+            if(file.exists()){
+                InputStream in = new FileInputStream(fichero);
 
-            if(!file.exists()){
-                if(fichero.endsWith(".txt")){
-                    clienteFTP.storeFile(fichero,null);
+                clienteFTP.setFileTransferMode(FTP.BINARY_FILE_TYPE);
+                clienteFTP.appendFile(fichero,in);
 
-                    System.out.println("El fichero se ha encontrado");
-                }
+                System.out.println("Se ha subido el fichero correctamente");
 
-
+            }else{
+                System.out.println("No se ha encontrado el fichero");
             }
 
 
