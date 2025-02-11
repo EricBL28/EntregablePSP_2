@@ -107,7 +107,7 @@ public class Main {
             System.err.println(e.getMessage());
         }
     }
-    public static void subirFichero(FTPClient clienteFTP){// para entender más esto https://optimizarsinmas.blogspot.com/2011/01/ftp-en-java.html
+    public static void subirFichero(FTPClient clienteFTP){
 
         try{
 
@@ -118,7 +118,10 @@ public class Main {
             if(file.exists()){
                 InputStream in = new FileInputStream(fichero);
 
+                clienteFTP.setFileType(FTP.BINARY_FILE_TYPE);
+
                 clienteFTP.setFileTransferMode(FTP.BINARY_FILE_TYPE);
+
                 clienteFTP.appendFile(fichero,in);
 
                 System.out.println("Se ha subido el fichero correctamente");
