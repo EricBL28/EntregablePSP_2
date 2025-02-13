@@ -4,75 +4,50 @@
  */
 package org.example;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
+import java.util.Scanner;
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
-/**
- * ****************************************************************************
- * programa para enviar correo desde una cuenta de gmail.com por el puerto 465
- * SMTP sobre el protocolo seguro SSL (tiene que ser seguro, porque ni Google
- * ni ningún otro proveedor dejan enviar hoy día por el puerto 25)
- *
- * @author IMCG
- */
-class EnviarCorreoSSL {
+class Main {
 
-    //cuenta de usuario en gmail.com
-    private static final String cuentaUsuario = "ericnztpruebas@gmail.com";
-
-    //la contraseña que pones aquí no es la de tu correo, sino la que generas desde Gmail para que se conecte tu aplicación
-  /*Ve a tu cuenta de Google.
-  Selecciona Seguridad.
-  En "Iniciar sesión en Google", selecciona Verificación en dos pasos.
-  En la parte inferior de la página, selecciona Contraseñas de aplicación.
-  Introduce un nombre que te ayude a recordar dónde utilizarás la contraseña de aplicación.
-  Selecciona Generar.
-  Para introducir la contraseña de aplicación, sigue las instrucciones que aparecen en pantalla. La contraseña de aplicación es el código de 16 caracteres que se genera en tu dispositivo.
-  Selecciona Hecho.*/
-    private static final String password = "tahi txkx owfk sctt";
-    //dirección de correo del destinatario58
-    private static final String mailDestinatario = "struitsmith@gmail.com";
-    //redes@psp.local email del servidor de la máquina virtual
+    private static final Properties prop = new Properties();
+    private static String cuentaUsuario;
+    private static String password;
+    private static String mailDestinatario="struitsmith@gmail.com";
+    private static final Scanner sc = new Scanner(System.in);
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
-        //valora propiedades para construir la sesión con el servidor
+        cargarPropiedades();
+
+        String opcion;
+        do {
+            mostrarMenu();
+            opcion =sc.nextLine();
+            elegirOpcion(opcion);
+        }while (!Objects.equals(opcion, "3"));
+
         Properties props = new Properties();
-        //servidor SMTP
-        //GMAIL --> smtp.gmail.com
-        //local mira la ip con ip address
-        //props.put("mail.smtp.host", "192.168.1.3");
+
         props.put("mail.smtp.host", "smtp.gmail.com");
-
-        //identificación requerida
         props.put("mail.smtp.auth", "true");
-
-        //Descomenta las siguientes líneas para enviar por SMTPS (SMTP sobre SSL)
-
-        //puerto para el socket de sesión
-        //props.put("mail.smtp.socketFactory.port", "465");
-        //tipo de socket
-        //props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-        //puerto smtp
-        //props.put("mail.smtp.port", "465");
-
-
-        //Para transmisión segura a través de TLS
         props.put("mail.smtp.starttls.enable", "true"); //Para conectar de manera segura al servidor SMTP
         props.put("mail.smtp.port", "587"); //El puerto SMTP seguro de Google
 
-        //Sin seguridad
-        //props.put("mail.smtp.port", "25");
-
-        //abre una nueva sesión contra el servidor basada en:
-        //el usuario, la contraseña y las propiedades especificadas
         Session session = Session.getDefaultInstance(props,
                 new javax.mail.Authenticator() {
 
@@ -101,5 +76,120 @@ class EnviarCorreoSSL {
         } catch (MessagingException e) {
             System.err.println(e.getMessage());
         }
+    }
+
+    public static void mostrarMenu(){
+
+        System.out.println("MENU");
+        System.out.println("1. Leer correo");
+        System.out.println("2. Enviar Email");
+        System.out.println("3. Salir");
+
+    }
+    public static void elegirOpcion(String opcion) throws IOException {
+
+        switch(opcion){
+            case "1":
+                leerEmail();
+                break;
+            case "2":
+                enviarEmail();
+                break;
+            case "3":
+                System.out.println("Saliendo del programa");
+                break;
+
+            default:
+                System.out.println("Opcion no valida");
+        }
+    }
+    public static void cargarPropiedades() {
+        try (InputStream input = new FileInputStream("configuracion.properties")) {
+            prop.load(new FileInputStream("src/main/resources/propierties.properties"));
+            cuentaUsuario = prop.getProperty("email");
+            password = prop.getProperty("password");
+        } catch (IOException ex) {
+            System.out.println("Error cargando configuración: " + ex.getMessage());
+        }
+    }
+
+    public static void leerEmail() {
+
+        try {
+            Properties prop = new Properties();
+            prop.put("mail.store.protocol", "imaps");
+            Session session = Session.getDefaultInstance(prop, null);
+            Store store = session.getStore("imaps");
+            store.connect("imap.gmail.com", cuentaUsuario, password);
+
+            Folder inbox = store.getFolder("INBOX");
+            inbox.open(Folder.READ_ONLY);
+            Message[] messages = inbox.getMessages();
+
+            for (Message message : messages) {
+                if (!message.isSet(Flags.Flag.SEEN)) {
+                    System.out.println("Remitente: " + Arrays.toString(message.getFrom()));
+                    System.out.println("Asunto: " + message.getSubject());
+                    System.out.println("Fecha: " + message.getSentDate());
+                }
+            }
+            inbox.close(false);
+            store.close();
+        } catch (Exception e) {
+            System.out.println("Error leyendo correos: " + e.getMessage());
+        }
+
+    }
+
+    public static void enviarEmail() {
+
+        try {
+            System.out.print("Destinatario: ");
+            String to = sc.nextLine();
+            System.out.print("Asunto: ");
+            String subject = sc.nextLine();
+            System.out.print("Mensaje: ");
+            String body = sc.nextLine();
+            System.out.print("Ruta del archivo adjunto: ");
+            String filePath = sc.nextLine();
+
+            Properties prop = new Properties();
+            prop.put("mail.smtp.auth", "true");
+            prop.put("mail.smtp.starttls.enable", "true");
+            prop.put("mail.smtp.host", "smtp.gmail.com");
+            prop.put("mail.smtp.port", "587");
+
+            Session session = Session.getInstance(prop, new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(cuentaUsuario, password);
+                }
+            });
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(cuentaUsuario));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(cuentaUsuario));
+            message.setSubject(subject);
+
+            MimeBodyPart messageBodyPart = new MimeBodyPart();
+            messageBodyPart.setText(body);
+
+            MimeBodyPart attachmentPart = new MimeBodyPart();
+            DataSource source = new FileDataSource(filePath);
+            attachmentPart.setDataHandler(new DataHandler(source));
+            attachmentPart.setFileName(new File(filePath).getName());
+
+            Multipart multipart = new MimeMultipart();
+            multipart.addBodyPart(messageBodyPart);
+            multipart.addBodyPart(attachmentPart);
+
+            message.setContent(multipart);
+
+            Transport.send(message);
+            System.out.println("Correo enviado correctamente.");
+        } catch (Exception e) {
+            System.out.println("Error enviando correo: " + e.getMessage());
+        }
+
     }
 }
