@@ -118,13 +118,13 @@ class Main {
 
         try {
             System.out.print("Destinatario: ");
-            String to = sc.nextLine();
+            String destinatario = sc.nextLine();
             System.out.print("Asunto: ");
-            String subject = sc.nextLine();
+            String asunto = sc.nextLine();
             System.out.print("Mensaje: ");
-            String body = sc.nextLine();
+            String mensaje = sc.nextLine();
             System.out.print("Ruta del archivo adjunto: ");
-            String filePath = sc.nextLine();
+            String rutaFichero = sc.nextLine();
 
             Properties prop = new Properties();
             prop.put("mail.smtp.auth", "true");
@@ -140,17 +140,17 @@ class Main {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(cuentaUsuario));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(destinatario));
             message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(cuentaUsuario));
-            message.setSubject(subject);
+            message.setSubject(asunto);
 
             MimeBodyPart messageBodyPart = new MimeBodyPart();
-            messageBodyPart.setText(body);
+            messageBodyPart.setText(mensaje);
 
             MimeBodyPart attachmentPart = new MimeBodyPart();
-            DataSource source = new FileDataSource(filePath);
+            DataSource source = new FileDataSource(rutaFichero);
             attachmentPart.setDataHandler(new DataHandler(source));
-            attachmentPart.setFileName(new File(filePath).getName());
+            attachmentPart.setFileName(new File(rutaFichero).getName());
 
             Multipart multipart = new MimeMultipart();
             multipart.addBodyPart(messageBodyPart);
