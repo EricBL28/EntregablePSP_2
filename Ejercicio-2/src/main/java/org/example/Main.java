@@ -7,7 +7,6 @@ package org.example;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
@@ -26,11 +25,13 @@ class Main {
     private static final Properties prop = new Properties();
     private static String cuentaUsuario;
     private static String password;
-    private static String mailDestinatario="struitsmith@gmail.com";
+    private static String imapHost;
+    private static String smtpHost;
+
     private static final Scanner sc = new Scanner(System.in);
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         cargarPropiedades();
 
@@ -51,7 +52,7 @@ class Main {
         System.out.println("3. Salir");
 
     }
-    public static void elegirOpcion(String opcion) throws IOException {
+    public static void elegirOpcion(String opcion)  {
 
         switch(opcion){
             case "1":
@@ -73,6 +74,8 @@ class Main {
             prop.load(new FileInputStream("src/main/resources/configuracion.properties"));
             cuentaUsuario = prop.getProperty("email");
             password = prop.getProperty("password");
+            imapHost = prop.getProperty("imap_host");
+            smtpHost = prop.getProperty("smtp_host");
         } catch (IOException ex) {
             System.out.println("Error cargando configuración: " + ex.getMessage());
         }
@@ -86,18 +89,19 @@ class Main {
 
             Session session = Session.getDefaultInstance(prop, null);
             Store store = session.getStore("imaps");
-            store.connect("imap.gmail.com", cuentaUsuario, password);
+            store.connect(imapHost, cuentaUsuario, password);
 
             Folder inbox = store.getFolder("INBOX");
             inbox.open(Folder.READ_ONLY);
 
             Message[] messages = inbox.getMessages();
-
+            System.out.println("-------------------------------------------------");
             for (Message message : messages) {
                 if (!message.isSet(Flags.Flag.SEEN)) {
                     System.out.println("Remitente: " + Arrays.toString(message.getFrom()));
                     System.out.println("Asunto: " + message.getSubject());
                     System.out.println("Fecha: " + message.getSentDate());
+                    System.out.println("-------------------------------------------------");
                 }
             }
             inbox.close(false);
@@ -123,7 +127,7 @@ class Main {
             Properties prop = new Properties();
             prop.put("mail.smtp.auth", "true");
             prop.put("mail.smtp.starttls.enable", "true");
-            prop.put("mail.smtp.host", "smtp.gmail.com");
+            prop.put("mail.smtp.host", smtpHost);
             prop.put("mail.smtp.port", "587");
 
             Session session = Session.getInstance(prop, new Authenticator() {
