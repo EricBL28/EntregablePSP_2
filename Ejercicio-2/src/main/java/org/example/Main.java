@@ -28,6 +28,7 @@ class Main {
     private static String imapHost;
     private static String smtpHost;
 
+    private static String puerto;
     private static final Scanner sc = new Scanner(System.in);
 
 
@@ -76,6 +77,7 @@ class Main {
             password = prop.getProperty("password");
             imapHost = prop.getProperty("imap_host");
             smtpHost = prop.getProperty("smtp_host");
+            puerto = prop.getProperty("smtp_port");
         } catch (IOException ex) {
             System.out.println("Error cargando configuración: " + ex.getMessage());
         }
@@ -128,7 +130,7 @@ class Main {
             prop.put("mail.smtp.auth", "true");
             prop.put("mail.smtp.starttls.enable", "true");
             prop.put("mail.smtp.host", smtpHost);
-            prop.put("mail.smtp.port", "587");
+            prop.put("mail.smtp.port",puerto );
 
             Session session = Session.getInstance(prop, new Authenticator() {
                 protected PasswordAuthentication getPasswordAuthentication() {
@@ -161,6 +163,5 @@ class Main {
         } catch (Exception e) {
             System.out.println("Error enviando correo: " + e.getMessage());
         }
-
     }
 }
