@@ -41,41 +41,6 @@ class Main {
             elegirOpcion(opcion);
         }while (!Objects.equals(opcion, "3"));
 
-        Properties props = new Properties();
-
-        props.put("mail.smtp.host", "smtp.gmail.com");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true"); //Para conectar de manera segura al servidor SMTP
-        props.put("mail.smtp.port", "587"); //El puerto SMTP seguro de Google
-
-        Session session = Session.getDefaultInstance(props,
-                new javax.mail.Authenticator() {
-
-                    @Override
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return new PasswordAuthentication(cuentaUsuario, password);
-                    }
-                });
-
-        System.out.println("Enviando Correo");
-        try {
-            //compone el mensaje
-            Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(cuentaUsuario));
-
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(mailDestinatario));
-
-            //asunto
-            message.setSubject("Holi");
-            //cuerpo del mensaje
-            message.setText("Emosido engañado");
-            //envía el mensaje, realizando conexión, transmisión y desconexión
-            Transport.send(message);
-            //lo da por enviado
-            System.out.println("Enviado!");
-        } catch (MessagingException e) {
-            System.err.println(e.getMessage());
-        }
     }
 
     public static void mostrarMenu(){
@@ -104,8 +69,8 @@ class Main {
         }
     }
     public static void cargarPropiedades() {
-        try (InputStream input = new FileInputStream("configuracion.properties")) {
-            prop.load(new FileInputStream("src/main/resources/propierties.properties"));
+        try {
+            prop.load(new FileInputStream("src/main/resources/configuracion.properties"));
             cuentaUsuario = prop.getProperty("email");
             password = prop.getProperty("password");
         } catch (IOException ex) {
@@ -118,12 +83,14 @@ class Main {
         try {
             Properties prop = new Properties();
             prop.put("mail.store.protocol", "imaps");
+
             Session session = Session.getDefaultInstance(prop, null);
             Store store = session.getStore("imaps");
             store.connect("imap.gmail.com", cuentaUsuario, password);
 
             Folder inbox = store.getFolder("INBOX");
             inbox.open(Folder.READ_ONLY);
+
             Message[] messages = inbox.getMessages();
 
             for (Message message : messages) {
